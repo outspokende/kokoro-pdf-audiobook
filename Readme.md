@@ -13,17 +13,27 @@ cd kokoro-pdf-audiobook
 ./start.sh
 ```
 
+For scanned PDFs without a text layer, install the OCR engine once before starting the app:
+
+```bash
+brew install tesseract tesseract-lang
+```
+
+The language selector supports English, German, or both. Tesseract language data must be installed for the selected language.
+
 Then open [http://localhost:8501](http://localhost:8501) on the Mac, or `http://<Mac-LAN-or-VPN-IP>:8501` from a device that can reach it. The app binds to all network interfaces by default for LAN/VPN access; use it only on a trusted network. Set `APP_HOST=127.0.0.1` before `./start.sh` to restrict it to the Mac. It is not a public upload service.
 
 ## What it does
 
-1. Extracts selectable PDF text and chapter headings.
+1. Reads selectable PDF text; automatically applies OCR to image pages without a usable text layer.
 2. Cleans common PDF artifacts, wraps, hyphenation, and boilerplate page furniture.
 3. Splits prose into sentence-aware chunks for Kokoro.
 4. Generates speech with a built-in Kokoro voice and joins it with short pauses.
 5. Offers a WAV or MP3 download.
 
-This prototype currently provides English Kokoro voices. Scanned/image-only PDFs need OCR first. Always review the extracted text before generating audio. Front-matter detection is heuristic; inspect the preview and disable its option if it would omit wanted content.
+Each available voice has a short English sample in the voice selector so listeners can compare them before generating an audiobook. OCR and synthesis progress are shown in the app. Page extraction and each speech chunk are checkpointed locally, so an interrupted job can resume with the same PDF and settings.
+
+This prototype currently provides English Kokoro voices. Image-only scans are OCR'd locally with Tesseract. Always review the extracted text before generating audio: OCR quality depends on the scan. Front-matter detection is heuristic; inspect the preview.
 
 ## Privacy and rights
 
@@ -46,4 +56,4 @@ The project code is licensed under AGPL-3.0. PyMuPDF is offered under AGPL or a 
 
 ## Status
 
-**Prototype.** Validated preprocessing on the included 326-page public-domain scan: 22 chapters, about 333k cleaned characters, and the narrative correctly bounded from its first chapter through “THE END.” Kokoro generated and encoded a 22-second WAV and MP3 excerpt. The app starts on the LAN/VPN interface. Full-book audio generation and the browser download interaction have not been verified. See [validation.md](validation.md).
+**Prototype.** Validated preprocessing on the included 326-page public-domain scan: 22 chapters, about 334k cleaned characters, and the narrative correctly bounded from its first chapter through “THE END.” Kokoro generated and encoded a 22-second WAV and MP3 excerpt. The app starts on the LAN/VPN interface. Full-book audio generation and the browser download interaction have not been verified. See [validation.md](validation.md).

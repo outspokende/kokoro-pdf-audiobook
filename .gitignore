@@ -6,6 +6,7 @@ __pycache__/
 !samples/war-of-the-worlds/warofworlds1898well.pdf
 *.wav
 *.mp3
+!app/assets/voice_samples/*.mp3
 output/
 .env
 .streamlit/secrets.toml

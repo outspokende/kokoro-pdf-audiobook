@@ -2,9 +2,11 @@
 
 | Component | Role | Status |
 |---|---|---|
-| `app/preprocess.py` | PDF text extraction, repeated header/footer suppression, cleanup, TOC-aware segmentation, sentence chunks | Tested on the included 326-page scan; 22 chapters and about 333k cleaned characters |
-| `app/tts.py` | Kokoro via MLX Audio; sequential chunk generation and WAV/MP3 assembly | Confirmed 22-second WAV and MP3 excerpt; full-book synthesis not run |
-| `app/ui.py` | Streamlit upload, text preview, voice/format choices and download | Starts on LAN/VPN and page is reachable; browser upload/download flow not fully verified |
+| `app/preprocess.py` | PDF text extraction, automatic OCR for image-only pages, per-page checkpointing, cleanup, TOC-aware segmentation | OCR smoke-tested on an image-only page; full scan's text layer processed into 22 chapters |
+| `app/tts.py` | Kokoro via MLX Audio; WAV checkpoints per chunk, resume, WAV/MP3 assembly | Pause/resume smoke-tested on a generated sample; full-book synthesis not run |
+| `app/jobs.py` | Local job state, background worker, progress, cancellation and restart detection | Implemented; same PDF and settings resume from page/chunk checkpoints |
+| `app/ui.py` | Streamlit upload, OCR-language selection, preview, live progress/cancel/resume, voice samples and download | UI workflow updated; requires manual walkthrough for a full book |
+| `app/assets/voice_samples/` | Short, matching English MP3 previews for the six built-in voices | Generated locally with Kokoro for in-menu comparison |
 | `install.sh`, `start.sh` | Create Python 3.11 virtualenv, install dependencies and run UI | Install and launch verified on Apple Silicon Mac |
 | `samples/war-of-the-worlds/` | Scanned public-domain fixture with OCR text layer | 326-page sample; source and rights documented in folder README |
 

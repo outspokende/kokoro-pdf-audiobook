@@ -1,9 +1,12 @@
 """Standalone adaptation of KokoroBooks PDF extraction and TTS preparation."""
 from __future__ import annotations
 
+import json
 import re
+import shutil
 import unicodedata
 from collections import Counter
+from pathlib import Path
 
 import pymupdf as fitz
 
@@ -57,23 +60,70 @@ def _toc_chapters(page_texts: list[str]) -> tuple[list[str], int | None]:
     return titles, max(contents_pages)
 
 
-def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
+def prepare_pdf(path: str, skip_front_matter: bool = False, ocr_language: str = "eng",
+                progress=None, checkpoint_dir: str | Path | None = None,
+                cancelled=None) -> dict:
     """Extract PDF text, suppress repeated edge furniture, retain TOC chapters."""
     doc = fitz.open(path)
     try:
         pages: list[list[tuple[str, str | None, tuple[str, str] | None, float, float]]] = []
         counts: Counter[tuple[str, str]] = Counter()
         totals = Counter()
+        page_cache = Path(checkpoint_dir) / "pages" if checkpoint_dir else None
+        if page_cache:
+            page_cache.mkdir(parents=True, exist_ok=True)
         for i, page in enumerate(doc):
+            if cancelled and cancelled():
+                raise InterruptedError("OCR/Textaufbereitung angehalten.")
             parity = str(i % 2)
             totals[parity] += 1
             records = []
             h = page.rect.height or 1
-            for block in page.get_text("blocks", sort=True):
-                text = str(block[4]).strip()
+            cache_file = page_cache / f"{i:06d}.json" if page_cache else None
+            page_was_ocr = False
+            if cache_file and cache_file.is_file():
+                try:
+                    cached = json.loads(cache_file.read_text(encoding="utf-8"))
+                    page_was_ocr = cached.get("ocr", False)
+                    normalized_blocks = [(block[0], block[1], block[2])
+                                         for block in cached["blocks"]]
+                except (OSError, KeyError, TypeError, json.JSONDecodeError):
+                    cache_file.unlink(missing_ok=True)
+                    normalized_blocks = []
+            else:
+                normalized_blocks = []
+            if not normalized_blocks and not (cache_file and cache_file.is_file()):
+                native_blocks = page.get_text("blocks", sort=True)
+                native_chars = sum(len(re.findall(r"[A-Za-z0-9]", str(block[4])))
+                                   for block in native_blocks)
+                raw_blocks = native_blocks
+                if page.get_images(full=False) and native_chars < 24:
+                    if not shutil.which("tesseract"):
+                        raise RuntimeError(
+                            "Dieses PDF braucht OCR, aber Tesseract ist nicht installiert. "
+                            "Auf macOS: brew install tesseract tesseract-lang. Danach die App neu starten."
+                        )
+                    try:
+                        text_page = page.get_textpage_ocr(language=ocr_language, dpi=220, full=True)
+                        raw_blocks = page.get_text("blocks", textpage=text_page, sort=True)
+                        page_was_ocr = True
+                    except Exception as exc:
+                        raise RuntimeError(
+                            f"OCR auf Seite {i + 1} fehlgeschlagen (Sprache {ocr_language}). "
+                            "Prüfe Tesseract und die installierten Sprachdaten. "
+                            f"Details: {exc}"
+                        ) from exc
+                normalized_blocks = [(str(block[4]).strip(), float(block[1]), float(block[3]))
+                                     for block in raw_blocks if str(block[4]).strip()]
+                if cache_file:
+                    temporary_cache = cache_file.with_suffix(".json.tmp")
+                    temporary_cache.write_text(json.dumps({
+                        "ocr": page_was_ocr, "blocks": normalized_blocks,
+                    }, ensure_ascii=False), encoding="utf-8")
+                    temporary_cache.replace(cache_file)
+            for text, y0, y1 in normalized_blocks:
                 if not text:
                     continue
-                y0, y1 = float(block[1]), float(block[3])
                 edge = "header" if y0 / h <= .09 else "footer" if y1 / h >= .91 else None
                 norm = re.sub(r"\d+", "#", re.sub(r"\s+", " ", text.casefold())).strip()
                 key = (parity, norm) if edge and len(norm) > 4 else None
@@ -81,6 +131,10 @@ def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
                 if key:
                     counts[key] += 1
             pages.append(records)
+            if progress:
+                phase = "OCR" if page_was_ocr else "Texterkennung"
+                progress("ocr" if page_was_ocr else "extract", i + 1, len(doc),
+                         f"{phase}: Seite {i + 1} von {len(doc)}")
         repeated = {k for k, n in counts.items() if n >= max(3, int(totals[k[0]] * .3))}
         page_texts = []
         page_lines = []
@@ -164,6 +218,8 @@ def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
                     break
         sections = [("Full text", "\n".join(page_texts[start:]))]
 
+    if progress:
+        progress("clean", 1, 1, "Bereinige Text und teile ihn in Sprachabschnitte")
     prepared = []
     for section_index, (title, body) in enumerate(sections):
         cleaned = _clean(body)

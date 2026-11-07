@@ -17,4 +17,7 @@ if [ ! -d .venv ]; then
 fi
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
+if ! command -v tesseract >/dev/null 2>&1; then
+  echo "Optional OCR is not installed. For scanned PDFs, run: brew install tesseract tesseract-lang"
+fi
 echo "Setup finished. Start the local app with ./start.sh"
