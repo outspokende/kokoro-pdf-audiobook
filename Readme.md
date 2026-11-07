@@ -13,7 +13,7 @@ cd kokoro-pdf-audiobook
 ./start.sh
 ```
 
-Then open [http://localhost:8501](http://localhost:8501), upload a PDF you have the right to process, choose a voice and output format, and download the result. The app binds to localhost; it is not a public upload service.
+Then open [http://localhost:8501](http://localhost:8501) on the Mac, or `http://<Mac-LAN-or-VPN-IP>:8501` from a device that can reach it. The app binds to all network interfaces by default for LAN/VPN access; use it only on a trusted network. Set `APP_HOST=127.0.0.1` before `./start.sh` to restrict it to the Mac. It is not a public upload service.
 
 ## What it does
 
@@ -39,9 +39,11 @@ The project code is licensed under AGPL-3.0. PyMuPDF is offered under AGPL or a 
 
 - [inventory.md](inventory.md) — components, dependencies, and current status
 - [architecture.md](architecture.md) — data flow and local processing boundaries
+- [validation.md](validation.md) — end-to-end test scope and results
+- [samples/war-of-the-worlds/README.md](samples/war-of-the-worlds/README.md) — public-domain scanned fixture and provenance
 - [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) — prompt for an AI coding assistant to install or troubleshoot
 - [redaktionsnotiz.md](redaktionsnotiz.md) — factual wording for the related post
 
 ## Status
 
-**Prototype.** UI and pipeline code are assembled but have not yet been run end to end with a real PDF/model on this machine. Henning reports Kokoro runs quickly on his 16 GB Mac; this new app's speed has not yet been measured.
+**Prototype.** Validated preprocessing on the included 326-page public-domain scan: 22 chapters, about 333k cleaned characters, and the narrative correctly bounded from its first chapter through “THE END.” Kokoro generated and encoded a 22-second WAV and MP3 excerpt. The app starts on the LAN/VPN interface. Full-book audio generation and the browser download interaction have not been verified. See [validation.md](validation.md).

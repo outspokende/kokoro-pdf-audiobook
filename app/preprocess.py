@@ -5,7 +5,7 @@ import re
 import unicodedata
 from collections import Counter
 
-import fitz
+import pymupdf as fitz
 
 
 def _clean(text: str) -> str:
@@ -25,11 +25,43 @@ def _clean(text: str) -> str:
     return re.sub(r"\n{2,}", "\n\n", text).strip()
 
 
+def _normal_heading(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text).casefold()
+    text = re.sub(r"\s*[-‐‑‒–—]\s*", "", text)
+    return re.sub(r"[^a-z0-9]+", "", text)
+
+
+def _toc_chapters(page_texts: list[str]) -> tuple[list[str], int | None]:
+    """Infer chapter headings from a printed contents page in OCR text."""
+    contents_pages = [i for i, text in enumerate(page_texts[:50])
+                      if re.search(r"\b(?:contents|table of contents)\b", text, re.I)]
+    if not contents_pages:
+        return [], None
+
+    titles: list[str] = []
+    for page_index in contents_pages:
+        lines = page_texts[page_index].splitlines()
+        for i, line in enumerate(lines):
+            match = re.match(r"^\s*(?:[ivxlcdm]{1,8}|\d{1,3})[.)]\s+(.+?)\s*$", line, re.I)
+            if not match:
+                continue
+            title = match.group(1).strip(" .\t")
+            if len(re.sub(r"[^a-z]", "", title.casefold())) < 5:
+                continue
+            # A few scanned contents lines wrap before their printed page number.
+            if i + 1 < len(lines) and re.match(r"^\s*[A-Z][A-Za-z -]{2,45}\s*$", lines[i + 1]):
+                title = f"{title} {lines[i + 1].strip()}"
+            key = _normal_heading(title)
+            if key and key not in {_normal_heading(x) for x in titles}:
+                titles.append(title)
+    return titles, max(contents_pages)
+
+
 def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
     """Extract PDF text, suppress repeated edge furniture, retain TOC chapters."""
     doc = fitz.open(path)
     try:
-        pages: list[list[tuple[str, str | None]]] = []
+        pages: list[list[tuple[str, str | None, tuple[str, str] | None, float, float]]] = []
         counts: Counter[tuple[str, str]] = Counter()
         totals = Counter()
         for i, page in enumerate(doc):
@@ -41,24 +73,39 @@ def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
                 text = str(block[4]).strip()
                 if not text:
                     continue
-                edge = "header" if block[3] / h <= .09 else "footer" if block[1] / h >= .91 else None
+                y0, y1 = float(block[1]), float(block[3])
+                edge = "header" if y0 / h <= .09 else "footer" if y1 / h >= .91 else None
                 norm = re.sub(r"\d+", "#", re.sub(r"\s+", " ", text.casefold())).strip()
                 key = (parity, norm) if edge and len(norm) > 4 else None
-                records.append((text, edge, key))
+                records.append((text, edge, key, y0, y1))
                 if key:
                     counts[key] += 1
             pages.append(records)
         repeated = {k for k, n in counts.items() if n >= max(3, int(totals[k[0]] * .3))}
         page_texts = []
+        page_lines = []
         for records in pages:
-            kept = []
-            for text, edge, key in records:
+            kept_blocks = []
+            kept_page_lines = []
+            previous_y1 = None
+            for text, edge, key, y0, y1 in records:
                 if edge and key in repeated:
                     continue
                 if edge and re.fullmatch(r"\s*(?:page\s+)?[0-9ivxlcdm]+\s*", text, re.I):
                     continue
-                kept.append(text)
-            page_texts.append("\n".join(kept))
+                if re.fullmatch(r"\s*[0-9]{1,4}\s*", text):
+                    continue
+                # Keep OCR reading order but restore paragraph breaks only for
+                # a visible vertical gap, not between every scanned text block.
+                if kept_blocks and previous_y1 is not None and y0 - previous_y1 > 24:
+                    kept_blocks.append("\n\n")
+                elif kept_blocks:
+                    kept_blocks.append("\n")
+                kept_blocks.append(text)
+                kept_page_lines.extend(line.strip() for line in text.splitlines() if line.strip())
+                previous_y1 = y1
+            page_texts.append("".join(kept_blocks))
+            page_lines.append(kept_page_lines)
         toc = doc.get_toc(simple=True) or []
     finally:
         doc.close()
@@ -74,6 +121,20 @@ def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
         if len(top) < 2:
             top = [x for x in entries if x[0] > level] or entries
         chapter_starts = sorted({(page - 1, title) for _, title, page in top})
+    else:
+        inferred_titles, contents_end = _toc_chapters(page_texts)
+        if inferred_titles and contents_end is not None:
+            previous = contents_end
+            for title in inferred_titles:
+                target = _normal_heading(title)
+                found = None
+                for page_index in range(previous + 1, len(page_lines)):
+                    if any(_normal_heading(line) == target for line in page_lines[page_index]):
+                        found = page_index
+                        break
+                if found is not None:
+                    chapter_starts.append((found, title))
+                    previous = found
 
     if chapter_starts:
         sections = []
@@ -85,6 +146,10 @@ def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
                          if title.casefold().strip() not in front_titles]
             if narrative:
                 chapter_starts = narrative
+        if not skip_front_matter and chapter_starts[0][0] > 0:
+            front = "\n".join(page_texts[:chapter_starts[0][0]])
+            if front.strip():
+                sections.append(("Front matter", front))
         for i, (start, title) in enumerate(chapter_starts):
             end = chapter_starts[i + 1][0] if i + 1 < len(chapter_starts) else len(page_texts)
             body = "\n".join(page_texts[start:end])
@@ -100,8 +165,12 @@ def prepare_pdf(path: str, skip_front_matter: bool = False) -> dict:
         sections = [("Full text", "\n".join(page_texts[start:]))]
 
     prepared = []
-    for title, body in sections:
+    for section_index, (title, body) in enumerate(sections):
         cleaned = _clean(body)
+        if section_index == len(sections) - 1:
+            end_marker = re.search(r"(?im)^\s*THE END\s*[.!]?\s*$", cleaned)
+            if end_marker and len(cleaned) - end_marker.end() < 1200:
+                cleaned = cleaned[:end_marker.end()].strip()
         if not cleaned:
             continue
         first_line = cleaned.splitlines()[0].strip().casefold() if cleaned.splitlines() else ""

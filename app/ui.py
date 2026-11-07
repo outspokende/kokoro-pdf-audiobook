@@ -11,11 +11,11 @@ from app.tts import synthesize
 st.set_page_config(page_title="Kokoro PDF to Audiobook", page_icon="📚", layout="centered")
 st.title("PDF → Hörbuch")
 st.caption("Lokal auf deinem Mac. PDF-Text wird bereinigt und mit einer Kokoro-Stimme vorgelesen.")
-st.info("Voraussetzung: Apple-Silicon-Mac. Die erste Generierung lädt das Sprachmodell. Nur PDFs verarbeiten, für die du die nötigen Rechte hast.")
+st.info("Voraussetzung: Apple-Silicon-Mac. Eingescannte PDFs brauchen eine OCR-Textschicht. Die erste Generierung lädt das Sprachmodell. Nur PDFs verarbeiten, für die du die nötigen Rechte hast.")
 
 upload = st.file_uploader("PDF auswählen", type=["pdf"], max_upload_size=100)
-skip_front = st.checkbox("Vorspann überspringen, wenn ein Kapitelanfang erkannt wird", value=False,
-                         help="Heuristik; bitte die Textvorschau kontrollieren. Ein PDF-Inhaltsverzeichnis bleibt erhalten.")
+skip_front = st.checkbox("Vorspann überspringen, wenn Kapitel erkannt werden", value=True,
+                         help="Das Inhaltsverzeichnis hilft, die Geschichte zu finden. Bitte die Textvorschau prüfen; wenn kein Kapitel erkannt wird, bleibt der Textanfang erhalten.")
 voice = st.selectbox("Kokoro-Stimme", ["af_heart", "af_bella", "am_michael", "am_adam", "bf_emma", "bm_george"])
 fmt = st.radio("Downloadformat", ["mp3", "wav"], horizontal=True)
 

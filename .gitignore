@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .DS_Store
 *.pdf
+!samples/war-of-the-worlds/warofworlds1898well.pdf
 *.wav
 *.mp3
 output/
