@@ -33,6 +33,8 @@ Then open [http://localhost:8501](http://localhost:8501) on the Mac, or `http://
 
 The interface includes a six-step timeline from PDF upload through OCR, text preparation, review, synthesis, and export. During a job it highlights the active stage and shows both total and stage progress; paused or failed work is marked in the timeline. Expand “So läuft die Pipeline ab” for an explanation of each stage and the resume workflow.
 
+To try the pipeline without uploading your own book, tick **“Testbuch wählen: The War of the Worlds”** in the PDF panel. This selects the included 326-page PDF and disables the uploader while selected. The book is included at `samples/war-of-the-worlds/warofworlds1898well.pdf`; the [sample README](samples/war-of-the-worlds/README.md) documents its source and public-domain status. Review the prepared text first; generating the entire audiobook can take a long time.
+
 Each available voice has a short English sample in the voice selector so listeners can compare them before generating an audiobook. OCR and synthesis progress are shown in the app. Page extraction and each speech chunk are checkpointed locally, so an interrupted job can resume with the same PDF and settings.
 
 This prototype currently provides English Kokoro voices. Image-only scans are OCR'd locally with Tesseract. Always review the extracted text before generating audio: OCR quality depends on the scan. Front-matter detection is heuristic; inspect the preview.

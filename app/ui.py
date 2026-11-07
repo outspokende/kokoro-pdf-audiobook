@@ -10,6 +10,10 @@ import streamlit as st
 from app import jobs
 
 st.set_page_config(page_title="Kokoro PDF to Audiobook", page_icon="📚", layout="centered")
+SAMPLE_PDF = (
+    Path(__file__).resolve().parent.parent
+    / "samples" / "war-of-the-worlds" / "warofworlds1898well.pdf"
+)
 st.markdown("""
 <style>
 :root { color-scheme: dark; }
@@ -81,7 +85,21 @@ with st.container(border=True):
     with input_column:
         st.markdown('<p class="section-label">01 / Ausgangsmaterial</p>', unsafe_allow_html=True)
         st.subheader("PDF auswählen")
-        upload = st.file_uploader("PDF", type=["pdf"], max_upload_size=100, label_visibility="collapsed")
+        use_sample = st.checkbox(
+            "Testbuch wählen: The War of the Worlds",
+            value=False,
+            help="H. G. Wells, Ausgabe von 1898. Das 326-seitige PDF liegt im Repository unter samples/war-of-the-worlds/. Die vollständige Vertonung kann dauern.",
+        )
+        st.caption("Gemeinfreies Testbuch · H. G. Wells · 326 Seiten · [Quelle und Rechte](https://archive.org/details/warofworlds1898well)")
+        upload = st.file_uploader(
+            "PDF", type=["pdf"], max_upload_size=100, label_visibility="collapsed",
+            disabled=use_sample,
+        )
+        if use_sample:
+            if SAMPLE_PDF.is_file():
+                st.info("Testbuch ausgewählt. Klicke unten auf „PDF analysieren und Text aufbereiten“, um zu starten.")
+            else:
+                st.error("Das Testbuch-PDF fehlt. Lade es aus dem Repository-Ordner samples/war-of-the-worlds/ herunter.")
         skip_front = st.checkbox(
             "Vorspann überspringen, wenn Kapitel erkannt werden", value=True,
             help="Das Inhaltsverzeichnis hilft, die Geschichte zu finden. Bitte die Textvorschau prüfen.",
@@ -187,7 +205,8 @@ def render_pipeline_guide() -> None:
 Der Zeitstrahl zeigt die aktuelle Station. Während der Verarbeitung siehst du Gesamtfortschritt und Fortschritt der aktuellen Station. **Anhalten** speichert den letzten fertigen Schritt; zum Fortsetzen lädst du dieselbe PDF mit denselben Einstellungen erneut.
         """)
 
-if upload is None:
+selected_pdf = use_sample and SAMPLE_PDF.is_file() or upload is not None
+if not selected_pdf:
     st.markdown('<p class="section-label">03 / Der Ablauf</p><h3>Eine Pipeline, die du mitverfolgen kannst</h3>', unsafe_allow_html=True)
     render_timeline(False, None, False)
     render_pipeline_guide()
@@ -196,7 +215,8 @@ if upload is None:
     st.caption("PDF und Audio bleiben lokal auf diesem Mac. Für automatische OCR muss Tesseract installiert sein.")
     st.stop()
 
-pdf_bytes = upload.getvalue()
+pdf_bytes = SAMPLE_PDF.read_bytes() if use_sample else upload.getvalue()
+source_name = SAMPLE_PDF.name if use_sample else upload.name
 settings = {
     "skip_front_matter": skip_front,
     "ocr_language": ocr_language,
@@ -265,7 +285,7 @@ if status:
             output = folder / current["output"]
             if output.is_file():
                 st.download_button(
-                    "Hörbuch herunterladen", output.read_bytes(), file_name=f"{Path(upload.name).stem}.{output_format}",
+                    "Hörbuch herunterladen", output.read_bytes(), file_name=f"{Path(source_name).stem}.{output_format}",
                     mime="audio/mpeg" if output_format == "mp3" else "audio/wav",
                     key=f"download-{current_job_id}", type="primary",
                 )
