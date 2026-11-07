@@ -120,9 +120,10 @@ with st.container(border=True):
         )
     with settings_column:
         st.markdown('<p class="section-label">02 / Stimme & Format</p>', unsafe_allow_html=True)
-        ocr_language = st.selectbox(
-            "OCR-Sprache für Scans", ["eng", "deu", "eng+deu"],
-            format_func={"eng": "English", "deu": "Deutsch", "eng+deu": "English + Deutsch"}.__getitem__,
+        ocr_language = "eng"
+        st.text_input(
+            "OCR-Sprache für Scans", value="English", disabled=True,
+            help="Die integrierten Kokoro-Stimmen sind englisch; daher ist auch die OCR auf Englisch festgelegt.",
         )
         if not shutil.which("tesseract"):
             st.warning("Für bildbasierte PDFs wird Tesseract benötigt. Auf macOS einmalig im Terminal ausführen: `brew install tesseract tesseract-lang`.")
@@ -263,12 +264,8 @@ if not prepared and status.get("state") not in {"running", "cancelled", "interru
 
 if prepared:
     st.success(f"Text vorbereitet · {prepared['page_count']} PDF-Seiten · {len(prepared['chunks'])} Sprachabschnitte")
+    st.subheader("Textvorschau – bitte jetzt manuell prüfen")
     st.text_area("Textvorschau – bitte auf OCR-Fehler prüfen", prepared["text"], height=260)
-    if status.get("state") == "review" and not jobs.thread_running(job_id):
-        if st.button("Hörbuch erstellen / fortsetzen", type="primary"):
-            if not jobs.start_audio(job_id, settings):
-                st.warning("Ein anderer Hörbuchjob läuft gerade. Bitte warten.")
-            st.rerun()
 
 if status:
     running = jobs.thread_running(job_id)
@@ -324,12 +321,15 @@ if status:
                 st.rerun()
             return
 
-        if current.get("state") == "review":
-            if not prepared:
-                st.rerun()
-            st.caption("Textprüfung abgeschlossen. Kontrolliere die Vorschau und starte danach die Audiogenerierung.")
-
     show_job_progress(job_id)
+
+if status.get("state") == "review" and prepared and not jobs.thread_running(job_id):
+    st.markdown('<p class="section-label">04 / NÄCHSTER SCHRITT</p><h3>Text geprüft? Dann Hörbuch erstellen</h3>', unsafe_allow_html=True)
+    st.info("Bitte zuerst die Textvorschau weiter oben manuell auf OCR- und Formatierungsfehler prüfen. Die Schaltfläche hier startet anschließend die Audiogenerierung.")
+    if st.button("Hörbuch erstellen", type="primary"):
+        if not jobs.start_audio(job_id, settings):
+            st.warning("Ein anderer Hörbuchjob läuft gerade. Bitte warten.")
+        st.rerun()
 
 st.caption("Fortschritt wird pro Seite und Sprachabschnitt gespeichert. Bei Abbruch kannst du mit derselben PDF und denselben Einstellungen fortsetzen.")
 st.divider()

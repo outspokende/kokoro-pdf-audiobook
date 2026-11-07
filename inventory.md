@@ -5,7 +5,7 @@
 | `app/preprocess.py` | PDF text extraction, automatic OCR for image-only pages, per-page checkpointing, cleanup, TOC-aware segmentation | OCR smoke-tested on an image-only page; full scan's text layer processed into 22 chapters |
 | `app/tts.py` | Kokoro via MLX Audio; WAV checkpoints per chunk, resume, WAV/MP3 assembly | Pause/resume smoke-tested on a generated sample; full-book synthesis not run |
 | `app/jobs.py` | Local job state, background worker, progress, cancellation and restart detection | Implemented; same PDF and settings resume from page/chunk checkpoints |
-| `app/ui.py` | Dark studio-style Streamlit interface; PDF upload or included public-domain book checkbox, OCR-language selection, preview, six-step live pipeline timeline, stage and total progress, cancel/resume, voice samples and download | Layout and idle timeline visually checked; sample-book selection and full-book workflow require manual walkthrough |
+| `app/ui.py` | Dark studio-style Streamlit interface; PDF upload or included public-domain book checkbox, English-only OCR, manual text review with a clear next-step panel, six-step live pipeline timeline with per-stage rings, stage and total progress, cancel/resume, voice samples and download | Layout and idle timeline visually checked; sample-book selection and full-book workflow require manual walkthrough |
 | `app/assets/voice_samples/` | Short, matching English MP3 previews for the six built-in voices | Generated locally with Kokoro for in-menu comparison |
 | `install.sh`, `start.sh` | Create Python 3.11 virtualenv, install dependencies and run UI | Install and launch verified on Apple Silicon Mac |
 | `samples/war-of-the-worlds/` | Scanned public-domain fixture with OCR text layer | 326-page sample; source and rights documented in folder README |
@@ -17,7 +17,7 @@
 - Internet access for the initial Python package and model download.
 - Kokoro model default: `mlx-community/Kokoro-82M-bf16` (model card lists Apache-2.0; confirm voice/data terms before use).
 - PDF must contain extractable text. Image-only scans require a separate OCR step; scans with an OCR text layer can be processed.
-- English presets only in this prototype; other languages are not yet exposed in the UI.
+- English-only OCR and Kokoro voice presets are exposed in the prototype.
 - MP3 encoding uses the FFmpeg binary bundled by `imageio-ffmpeg`; WAV is written directly.
 
 ## Exclusions

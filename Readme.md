@@ -19,7 +19,7 @@ For scanned PDFs without a text layer, install the OCR engine once before starti
 brew install tesseract tesseract-lang
 ```
 
-The language selector supports English, German, or both. Tesseract language data must be installed for the selected language.
+OCR is fixed to English to match the built-in English Kokoro voices. Tesseract's English language data must be installed for scanned PDFs.
 
 Then open [http://localhost:8501](http://localhost:8501) on the Mac, or `http://<Mac-LAN-or-VPN-IP>:8501` from a device that can reach it. The app binds to all network interfaces by default for LAN/VPN access; use it only on a trusted network. Set `APP_HOST=127.0.0.1` before `./start.sh` to restrict it to the Mac. It is not a public upload service.
 
@@ -31,7 +31,7 @@ Then open [http://localhost:8501](http://localhost:8501) on the Mac, or `http://
 4. Generates speech with a built-in Kokoro voice and joins it with short pauses.
 5. Offers a WAV or MP3 download.
 
-The interface includes a six-step timeline from PDF upload through OCR, text preparation, review, synthesis, and export. Each circle has a progress ring: completed steps are full, the active step follows its stage percentage, and upcoming steps are empty. The active stage also pulses gently; that animation respects the system’s reduced-motion preference. Expand “So läuft die Pipeline ab” for an explanation of each stage and the resume workflow.
+The interface includes a six-step timeline from PDF upload through OCR, text preparation, review, synthesis, and export. Each circle has a progress ring: completed steps are full, the active step follows its stage percentage, and upcoming steps are empty. The active stage also pulses gently; that animation respects the system’s reduced-motion preference. After preparation, a clear next-step panel below the timeline tells the user to review the preview above before selecting “Hörbuch erstellen.” Expand “So läuft die Pipeline ab” for an explanation of each stage and the resume workflow.
 
 To try the pipeline without uploading your own book, tick **“Testbuch wählen: The War of the Worlds”** in the PDF panel. This selects the included 326-page PDF and disables the uploader while selected. The book is included at `samples/war-of-the-worlds/warofworlds1898well.pdf`; the [sample README](samples/war-of-the-worlds/README.md) documents its source and public-domain status. Review the prepared text first; generating the entire audiobook can take a long time.
 
