@@ -37,7 +37,7 @@ To try the pipeline without uploading your own book, tick **“Testbuch wählen:
 
 Each available voice has a short English sample in the voice selector so listeners can compare them before generating an audiobook. OCR and synthesis progress are shown in the app. Page extraction and each speech chunk are checkpointed locally, so an interrupted job can resume with the same PDF and settings.
 
-This prototype currently provides English Kokoro voices. Image-only scans are OCR'd locally with Tesseract. Always review the extracted text before generating audio: OCR quality depends on the scan. Front-matter detection is heuristic; inspect the preview.
+This prototype currently provides English Kokoro voices. Image-only scans are OCR'd locally with Tesseract; pages with an existing text layer use that text. When “skip front matter” is enabled, common `PROLOGUE` and `CHAPTER 1/ONE/I` headings are recognized even if scan noise such as leading punctuation appears before them. Always review the extracted text before generating audio: OCR quality and front-matter detection remain dependent on the scan.
 
 ## Privacy and rights
 

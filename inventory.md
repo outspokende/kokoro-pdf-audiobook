@@ -2,7 +2,7 @@
 
 | Component | Role | Status |
 |---|---|---|
-| `app/preprocess.py` | PDF text extraction, automatic OCR for image-only pages, per-page checkpointing, cleanup, TOC-aware segmentation | OCR smoke-tested on an image-only page; full scan's text layer processed into 22 chapters |
+| `app/preprocess.py` | PDF text extraction, automatic OCR for image-only pages, per-page checkpointing, cleanup, TOC-aware segmentation and noise-tolerant narrative-start detection | OCR smoke-tested on an image-only page; leading scan punctuation before `PROLOGUE` no longer prevents front-matter skipping |
 | `app/tts.py` | Kokoro via MLX Audio; WAV checkpoints per chunk, resume, WAV/MP3 assembly | Pause/resume smoke-tested on a generated sample; full-book synthesis not run |
 | `app/jobs.py` | Local job state, background worker, progress, cancellation and restart detection | Implemented; same PDF and settings resume from page/chunk checkpoints |
 | `app/ui.py` | Dark studio-style Streamlit interface; PDF upload or included public-domain book checkbox, English-only OCR, manual text review with a clear next-step panel, six-step live pipeline timeline with per-stage rings, stage and total progress, cancel/resume, voice samples and download | Layout and idle timeline visually checked; sample-book selection and full-book workflow require manual walkthrough |

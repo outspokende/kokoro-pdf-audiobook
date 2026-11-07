@@ -60,6 +60,17 @@ def _toc_chapters(page_texts: list[str]) -> tuple[list[str], int | None]:
     return titles, max(contents_pages)
 
 
+def _is_narrative_start(body: str) -> bool:
+    """Recognize common English openings despite OCR decoration before headings."""
+    for line in body.splitlines():
+        candidate = unicodedata.normalize("NFKC", line).strip()
+        candidate = re.sub(r"^[^A-Za-z0-9]+", "", candidate)
+        candidate = re.sub(r"\s+", " ", candidate)
+        if re.match(r"^(?:prologue|chapter\s+(?:1|one|i))\b", candidate, re.I):
+            return True
+    return False
+
+
 def prepare_pdf(path: str, skip_front_matter: bool = False, ocr_language: str = "eng",
                 progress=None, checkpoint_dir: str | Path | None = None,
                 cancelled=None) -> dict:
@@ -213,7 +224,7 @@ def prepare_pdf(path: str, skip_front_matter: bool = False, ocr_language: str = 
         start = 0
         if skip_front_matter:
             for i, body in enumerate(page_texts[:min(30, len(page_texts))]):
-                if re.search(r"(?im)^\s*(?:prologue|chapter\s+(?:1|one|i))\b", body):
+                if _is_narrative_start(body):
                     start = i
                     break
         sections = [("Full text", "\n".join(page_texts[start:]))]

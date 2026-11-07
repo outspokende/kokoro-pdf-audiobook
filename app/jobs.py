@@ -11,6 +11,8 @@ from app.preprocess import prepare_pdf
 from app.tts import synthesize_resumable
 
 OUTPUT_ROOT = Path(__file__).resolve().parents[1] / "output" / "jobs"
+# Bump when preprocessing results must be regenerated after an algorithm fix.
+PREPROCESS_REVISION = 2
 _threads: dict[str, threading.Thread] = {}
 _thread_lock = threading.Lock()
 
@@ -19,6 +21,7 @@ def job_id_for(pdf_bytes: bytes, settings: dict) -> str:
     digest = hashlib.sha256()
     digest.update(pdf_bytes)
     digest.update(json.dumps(settings, sort_keys=True).encode("utf-8"))
+    digest.update(f"preprocess-revision:{PREPROCESS_REVISION}".encode("ascii"))
     return digest.hexdigest()[:20]
 
 
