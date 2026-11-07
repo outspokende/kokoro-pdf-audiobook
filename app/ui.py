@@ -46,20 +46,31 @@ st.markdown("""
 .timeline { list-style: none; padding: .25rem 0 .1rem; margin: 0; }
 .timeline-step { position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: .9rem; min-height: 82px; }
 .timeline-step:not(:last-child):before { content: ""; position: absolute; left: 17px; top: 39px; bottom: -1px; width: 2px; background: #30394d; }
-.timeline-dot { z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #39435a; background: #151b29; color: #98a3ba; font-weight: 700; font-size: .83rem; }
+.timeline-dot { position: relative; z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 0; background: conic-gradient(var(--ring-color, #3a4356) var(--ring-progress, 0%), #30394d 0); color: #98a3ba; font-weight: 700; font-size: .83rem; }
+.timeline-dot:before { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: #151b29; }
+.timeline-dot > span { position: relative; z-index: 1; }
 .timeline-copy { padding: .13rem 0 .8rem; min-width: 0; }
 .timeline-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
 .timeline-title { color: #dce3f1; font-size: .98rem; font-weight: 680; }
 .timeline-state { color: #7e8aa4; font-size: .67rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
 .timeline-desc { margin: .22rem 0 0; color: #98a4ba; font-size: .85rem; line-height: 1.45; }
-.timeline-step.is-done .timeline-dot { color: #111a13; background: #a9f654; border-color: #a9f654; }
+.timeline-step.is-done .timeline-dot { color: #111a13; }
+.timeline-step.is-done .timeline-dot:before { background: #a9f654; }
 .timeline-step.is-done:not(:last-child):before { background: #719e43; }
-.timeline-step.is-current .timeline-dot { color: #0b1221; background: #74d9ff; border-color: #74d9ff; box-shadow: 0 0 0 5px rgba(116, 217, 255, .12); }
+.timeline-step.is-current .timeline-dot { color: #0b1221; animation: timeline-pulse 1.8s ease-out infinite; }
+.timeline-step.is-current .timeline-dot:before { background: #74d9ff; }
+@keyframes timeline-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(116, 217, 255, .4); }
+  70% { box-shadow: 0 0 0 10px rgba(116, 217, 255, .08); }
+  100% { box-shadow: 0 0 0 14px rgba(116, 217, 255, 0); }
+}
 .timeline-step.is-current .timeline-title { color: #f5f8ff; }
 .timeline-step.is-current .timeline-state { color: #74d9ff; }
-.timeline-step.is-paused .timeline-dot { color: #20170b; background: #ffca70; border-color: #ffca70; }
+.timeline-step.is-paused .timeline-dot { color: #20170b; }
+.timeline-step.is-paused .timeline-dot:before { background: #ffca70; }
 .timeline-step.is-paused .timeline-state { color: #ffca70; }
-.timeline-step.is-error .timeline-dot { color: #2b1115; background: #ff7d86; border-color: #ff7d86; }
+.timeline-step.is-error .timeline-dot { color: #2b1115; }
+.timeline-step.is-error .timeline-dot:before { background: #ff7d86; }
 .timeline-step.is-error .timeline-state { color: #ff9ba2; }
 [data-testid="stVerticalBlockBorderWrapper"] { border-color: rgba(163, 180, 220, .17); border-radius: 20px; background: rgba(18, 24, 37, .55); }
 [data-testid="stFileUploader"] section { border: 1px dashed rgba(150, 171, 210, .45); border-radius: 16px; background: rgba(255,255,255,.025); }
@@ -70,7 +81,10 @@ button[kind="primary"]:hover { filter: brightness(1.06); transform: translateY(-
 .stApp :is(button, a, input, select, textarea):focus-visible { outline: 3px solid #74d9ff; outline-offset: 3px; }
 h2, h3 { text-wrap: balance; }
 @media (max-width: 640px) { .block-container { padding: 1.2rem 1rem 2.5rem; } .hero { padding: 1.5rem 1.25rem; border-radius: 20px; } .timeline-step { min-height: 88px; } }
-@media (prefers-reduced-motion: reduce) { button[kind="primary"] { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  button[kind="primary"] { transition: none; }
+  .timeline-step.is-current .timeline-dot { animation: none; }
+}
 </style>
 <div class="hero">
   <div class="hero-kicker">Local audiobook studio</div>
@@ -172,6 +186,10 @@ def render_timeline(uploaded: bool, current: dict | None, has_prepared_text: boo
         selected = index == active_step and active_step < len(PIPELINE_STEPS)
         paused = selected and state in {"cancelled", "interrupted"}
         failed = selected and state == "error"
+        progress = 100 if done or state == "review" and selected else 0
+        if selected and not done and state != "review":
+            progress = max(0, min(100, int((current or {}).get("stage_percent", 0))))
+        ring_color = "#a9f654" if done else "#ffca70" if paused else "#ff7d86" if failed else "#74d9ff" if selected else "#3a4356"
         classes = "timeline-step"
         classes += " is-done" if done else ""
         classes += " is-current" if selected and not paused and not failed else ""
@@ -182,7 +200,9 @@ def render_timeline(uploaded: bool, current: dict | None, has_prepared_text: boo
         current_attr = ' aria-current="step"' if selected else ""
         rows.append(
             f'<li class="{classes}"{current_attr}>'
-            f'<span class="timeline-dot">{marker}</span>'
+            f'<span class="timeline-dot" role="progressbar" aria-label="Fortschritt: {html.escape(title)}" '
+            f'aria-valuemin="0" aria-valuemax="100" aria-valuenow="{progress}" '
+            f'style="--ring-progress:{progress}%;--ring-color:{ring_color}"><span>{marker}</span></span>'
             f'<div class="timeline-copy"><div class="timeline-title-row">'
             f'<span class="timeline-title">{html.escape(title)}</span>'
             f'<span class="timeline-state">{state_label}</span></div>'

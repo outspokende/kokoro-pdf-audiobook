@@ -31,7 +31,7 @@ Then open [http://localhost:8501](http://localhost:8501) on the Mac, or `http://
 4. Generates speech with a built-in Kokoro voice and joins it with short pauses.
 5. Offers a WAV or MP3 download.
 
-The interface includes a six-step timeline from PDF upload through OCR, text preparation, review, synthesis, and export. During a job it highlights the active stage and shows both total and stage progress; paused or failed work is marked in the timeline. Expand “So läuft die Pipeline ab” for an explanation of each stage and the resume workflow.
+The interface includes a six-step timeline from PDF upload through OCR, text preparation, review, synthesis, and export. Each circle has a progress ring: completed steps are full, the active step follows its stage percentage, and upcoming steps are empty. The active stage also pulses gently; that animation respects the system’s reduced-motion preference. Expand “So läuft die Pipeline ab” for an explanation of each stage and the resume workflow.
 
 To try the pipeline without uploading your own book, tick **“Testbuch wählen: The War of the Worlds”** in the PDF panel. This selects the included 326-page PDF and disables the uploader while selected. The book is included at `samples/war-of-the-worlds/warofworlds1898well.pdf`; the [sample README](samples/war-of-the-worlds/README.md) documents its source and public-domain status. Review the prepared text first; generating the entire audiobook can take a long time.
 
