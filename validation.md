@@ -13,6 +13,7 @@ Date: 2026-11-07. Machine: Apple Silicon Mac, Python 3.11, 16 GB RAM.
 
 - Kokoro `af_heart` generated the first prepared paragraph as a 22.025-second, 24 kHz mono WAV.
 - The same paragraph encoded to a 193,340-byte MP3 at about 70 kb/s. After the model was warm, that run took about 9 seconds.
+- The complete 1,110-chunk fixture audiobook was regenerated after removing stray asterisks from 81 text chunks. The MP3 was remuxed with the first PDF page as attached artwork and the filename stem as its title; both metadata and image stream were verified. Full-length playback was not reviewed.
 - `./install.sh` completed. `./start.sh` started Streamlit bound to `0.0.0.0:8501`; the app displayed a LAN URL and its page was reachable at `http://192.168.178.89:8501` during this session. That address can change with DHCP; users should use their Mac's current LAN/VPN-reachable IP.
 
 ## OCR and resume checks

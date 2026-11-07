@@ -2,10 +2,10 @@
 
 | Component | Role | Status |
 |---|---|---|
-| `app/preprocess.py` | PDF text extraction, automatic OCR for image-only pages, per-page checkpointing, cleanup, TOC-aware segmentation and noise-tolerant narrative-start detection | OCR smoke-tested on an image-only page; leading scan punctuation before `PROLOGUE` no longer prevents front-matter skipping |
-| `app/tts.py` | Kokoro via MLX Audio; WAV checkpoints per chunk, resume, WAV/MP3 assembly | Pause/resume smoke-tested on a generated sample; full-book synthesis not run |
-| `app/jobs.py` | Local job state, background worker, progress, cancellation and restart detection | Implemented; same PDF and settings resume from page/chunk checkpoints |
-| `app/ui.py` | Dark studio-style Streamlit interface; PDF upload or included public-domain book checkbox, English-only OCR, manual text review with a clear next-step panel, six-step live pipeline timeline with per-stage rings, stage and total progress, cancel/resume, voice samples, and recovery download for the latest completed job | Recovery card visually checked against a locally completed job; download click and full-book playback not independently verified |
+| `app/preprocess.py` | PDF text extraction, automatic OCR for image-only pages, per-page checkpointing, cleanup including stray asterisk repair, TOC-aware segmentation and noise-tolerant narrative-start detection | Noisy front-matter and OCR asterisks handled; source text still requires review |
+| `app/tts.py` | Kokoro via MLX Audio; WAV checkpoints per chunk, resume, WAV/MP3 assembly, MP3 cover and title metadata | Embedded cover/title verified on generated full-length MP3; full-book playback not independently verified |
+| `app/jobs.py` | Local job state, source filename/title, PDF first-page cover, progress, cancellation and restart detection | Same PDF/settings resume from checkpoints; metadata and cover are saved locally per job |
+| `app/ui.py` | Dark studio-style Streamlit interface; PDF upload or included public-domain book checkbox, English-only OCR, manual text review, six-step live timeline, voice samples, recovery download with cover and filename-based title | Recovery cover/title card visually checked against a locally completed job; full-book playback not independently verified |
 | `app/assets/voice_samples/` | Short, matching English MP3 previews for the six built-in voices | Generated locally with Kokoro for in-menu comparison |
 | `install.sh`, `start.sh` | Create Python 3.11 virtualenv, install dependencies and run UI | Install and launch verified on Apple Silicon Mac |
 | `samples/war-of-the-worlds/` | Scanned public-domain fixture with OCR text layer | 326-page sample; source and rights documented in folder README |

@@ -26,10 +26,11 @@ Then open [http://localhost:8501](http://localhost:8501) on the Mac, or `http://
 ## What it does
 
 1. Reads selectable PDF text; automatically applies OCR to image pages without a usable text layer.
-2. Cleans common PDF artifacts, wraps, hyphenation, and boilerplate page furniture.
+2. Cleans common PDF artifacts, wraps, hyphenation, boilerplate page furniture, and stray OCR/markup asterisks so they are not spoken aloud.
 3. Splits prose into sentence-aware chunks for Kokoro.
 4. Generates speech with a built-in Kokoro voice and joins it with short pauses.
 5. Offers a WAV or MP3 download.
+6. Uses the PDF's first page as the cover, displays it with the filename-based title, names the audio file after the PDF, and embeds the cover and title in MP3 metadata. WAV downloads include a separate cover-image download.
 
 The interface includes a six-step timeline from PDF upload through OCR, text preparation, review, synthesis, and export. Each circle has a progress ring: completed steps are full, the active step follows its stage percentage, and upcoming steps are empty. The active stage also pulses gently; that animation respects the system’s reduced-motion preference. After preparation, a clear next-step panel below the timeline tells the user to review the preview above before selecting “Hörbuch erstellen.” Expand “So läuft die Pipeline ab” for an explanation of each stage and the resume workflow.
 

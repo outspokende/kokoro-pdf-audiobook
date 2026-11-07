@@ -56,7 +56,8 @@ def synthesize(chunks: list[tuple[str, bool]], voice: str, output_format: str,
 
 def synthesize_resumable(chunks: list[tuple[str, bool]], voice: str, output_format: str,
                          chunk_dir: str | Path, output_path: str | Path,
-                         progress=None, cancelled=None) -> Path:
+                         progress=None, cancelled=None, cover_path: str | Path | None = None,
+                         title: str | None = None) -> Path:
     """Synthesize one checkpointed WAV per text chunk, then assemble the result."""
     import imageio_ffmpeg
     from mlx_audio.tts.utils import load_model
@@ -131,5 +132,23 @@ def synthesize_resumable(chunks: list[tuple[str, bool]], voice: str, output_form
     if result.returncode:
         mp3_partial.unlink(missing_ok=True)
         raise RuntimeError(f"MP3 conversion failed: {result.stderr[-1000:]}")
+    if cover_path and Path(cover_path).is_file():
+        tagged_partial = output_path.with_name(output_path.stem + ".cover.partial.mp3")
+        tag_result = subprocess.run([
+            ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
+            "-i", str(mp3_partial), "-i", str(cover_path),
+            "-map", "0:a:0", "-map", "1:v:0", "-c:a", "copy", "-c:v", "copy",
+            "-id3v2_version", "3", "-metadata", f"title={title or output_path.stem}",
+            "-metadata", f"album={title or output_path.stem}",
+            "-metadata:s:v:0", "title=Album cover",
+            "-metadata:s:v:0", "comment=Cover (front)",
+            "-disposition:v:0", "attached_pic", str(tagged_partial),
+        ], capture_output=True, text=True)
+        if tag_result.returncode:
+            tagged_partial.unlink(missing_ok=True)
+            mp3_partial.unlink(missing_ok=True)
+            raise RuntimeError(f"MP3-Cover konnte nicht eingebettet werden: {tag_result.stderr[-1000:]}")
+        mp3_partial.unlink(missing_ok=True)
+        mp3_partial = tagged_partial
     os.replace(mp3_partial, output_path)
     return output_path

@@ -23,21 +23,37 @@ def render_recent_download() -> str | None:
         return None
     output_path = recent["output_path"]
     job_id = recent["job_id"]
+    title = recent["title"]
+    cover_path = recent["cover_path"]
     suffix = output_path.suffix.lower() or ".mp3"
     mime = "audio/wav" if suffix == ".wav" else "audio/mpeg"
     finished = datetime.fromtimestamp(recent["modified_at"]).strftime("%d.%m.%Y · %H:%M")
     size_mib = output_path.stat().st_size / (1024 * 1024)
     with st.container(border=True):
         st.markdown('<p class="section-label">LETZTES HÖRBUCH</p>', unsafe_allow_html=True)
-        st.subheader("Fertig – hier herunterladen")
-        st.caption(f"Abgeschlossen {finished} · {size_mib:.1f} MiB")
-        st.download_button(
-            "Fertiges Hörbuch herunterladen",
-            data=lambda path=output_path: path.read_bytes(),
-            file_name=f"Hoerbuch-{job_id[:8]}{suffix}", mime=mime,
-            key=f"recent-download-{job_id}", type="primary", on_click="ignore",
-        )
-        st.caption("Die Datei liegt lokal auf diesem Mac.")
+        cover_column, details_column = st.columns([.8, 2.2], vertical_alignment="center")
+        with cover_column:
+            st.image(str(cover_path), caption=title, width=140)
+        with details_column:
+            st.subheader(title)
+            st.caption(f"Fertig · {finished} · {size_mib:.1f} MiB")
+            source_name = recent.get("source_name")
+            output_stem = jobs.safe_title_stem(Path(source_name).stem if source_name else title)
+            st.download_button(
+                "Fertiges Hörbuch herunterladen",
+                data=lambda path=output_path: path.read_bytes(),
+                file_name=f"{output_stem}{suffix}", mime=mime,
+                key=f"recent-download-{job_id}", type="primary", on_click="ignore",
+            )
+            if suffix == ".wav":
+                st.download_button(
+                    "Coverbild herunterladen",
+                    data=lambda path=cover_path: path.read_bytes(),
+                    file_name=f"{output_stem}-cover.jpg", mime="image/jpeg",
+                    key=f"recent-cover-{job_id}", on_click="ignore",
+                )
+            else:
+                st.caption("Das Cover ist in der MP3 eingebettet.")
     return job_id
 
 
@@ -274,10 +290,12 @@ settings = {
     "ocr_language": ocr_language,
     "voice": voice,
     "output_format": output_format,
+    "source_name": source_name,
 }
 job_id = jobs.job_id_for(pdf_bytes, settings)
 folder = jobs.job_dir(job_id)
-source = jobs.ensure_source(folder, pdf_bytes)
+source = jobs.ensure_source(folder, pdf_bytes, source_name)
+jobs.ensure_cover(source, folder / "cover.jpg")
 prepared_file = folder / "prepared.json"
 prepared = jobs._read_json(prepared_file)
 status = jobs.status_for(job_id)

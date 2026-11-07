@@ -4,15 +4,18 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import threading
 from pathlib import Path
+
+import pymupdf as fitz
 
 from app.preprocess import prepare_pdf
 from app.tts import synthesize_resumable
 
 OUTPUT_ROOT = Path(__file__).resolve().parents[1] / "output" / "jobs"
 # Bump when preprocessing results must be regenerated after an algorithm fix.
-PREPROCESS_REVISION = 2
+PREPROCESS_REVISION = 3
 _threads: dict[str, threading.Thread] = {}
 _thread_lock = threading.Lock()
 
@@ -47,6 +50,11 @@ def _status_path(folder: Path) -> Path:
     return folder / "status.json"
 
 
+def safe_title_stem(title: str) -> str:
+    stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", title).strip(" .")
+    return (stem[:120] or "Hoerbuch")
+
+
 def _update(folder: Path, **changes) -> dict:
     path = _status_path(folder)
     state = _read_json(path, {})
@@ -55,14 +63,39 @@ def _update(folder: Path, **changes) -> dict:
     return state
 
 
-def ensure_source(folder: Path, pdf_bytes: bytes) -> Path:
+def ensure_source(folder: Path, pdf_bytes: bytes, source_name: str | None = None) -> Path:
     source = folder / "source.pdf"
     if not source.exists():
         folder.mkdir(parents=True, exist_ok=True)
         temporary = source.with_suffix(".pdf.tmp")
         temporary.write_bytes(pdf_bytes)
         os.replace(temporary, source)
+    if source_name:
+        clean_name = Path(source_name).name
+        _write_json(folder / "metadata.json", {
+            "source_name": clean_name,
+            "title": Path(clean_name).stem,
+            "cover_page": 1,
+        })
     return source
+
+
+def ensure_cover(source_pdf: str | Path, cover_path: str | Path) -> Path:
+    """Render the PDF's first page as a modest JPEG cover image."""
+    source_pdf = Path(source_pdf)
+    cover_path = Path(cover_path)
+    if cover_path.is_file():
+        return cover_path
+    cover_path.parent.mkdir(parents=True, exist_ok=True)
+    with fitz.open(source_pdf) as document:
+        if not document.page_count:
+            raise ValueError("Das PDF enthält keine Seiten für ein Cover.")
+        page = document[0]
+        largest_edge = max(page.rect.width, page.rect.height, 1)
+        scale = min(2.0, 1200 / largest_edge)
+        pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+        pixmap.save(str(cover_path), jpg_quality=88)
+    return cover_path
 
 
 def status_for(job_id: str) -> dict:
@@ -91,7 +124,22 @@ def most_recent_completed_job() -> dict | None:
                 "output_path": output_path,
                 "modified_at": status_path.stat().st_mtime,
             }))
-    return max(candidates, key=lambda item: item[0])[1] if candidates else None
+    if not candidates:
+        return None
+    recent = max(candidates, key=lambda item: item[0])[1]
+    folder = recent["output_path"].parent
+    metadata = _read_json(folder / "metadata.json", {})
+    title = metadata.get("title")
+    if not title:
+        try:
+            with fitz.open(folder / "source.pdf") as document:
+                title = (document.metadata or {}).get("title")
+        except (OSError, RuntimeError):
+            title = None
+    recent["title"] = title or recent["output_path"].stem
+    recent["source_name"] = metadata.get("source_name")
+    recent["cover_path"] = ensure_cover(folder / "source.pdf", folder / "cover.jpg")
+    return recent
 
 
 def thread_running(job_id: str) -> bool:
@@ -187,11 +235,14 @@ def _audio_worker(job_id: str, settings: dict) -> None:
             _update(folder, stage=stage, percent=percent, stage_percent=int(ratio * 100),
                     completed_chunks=done, total_chunks=total, message=message)
 
-        filename = f"audiobook.{settings['output_format']}"
+        metadata = _read_json(folder / "metadata.json", {})
+        title = metadata.get("title") or "Hoerbuch"
+        filename = f"{safe_title_stem(title)}.{settings['output_format']}"
         output = folder / filename
         synthesize_resumable(
             chunks, settings["voice"], settings["output_format"], folder / "audio_chunks",
             output, progress=report, cancelled=lambda: _is_cancelled(folder),
+            cover_path=folder / "cover.jpg", title=title,
         )
         if _is_cancelled(folder):
             raise InterruptedError("Audiogenerierung angehalten.")

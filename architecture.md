@@ -20,10 +20,10 @@ PDF bytes and audio remain on the Mac during inference. The app has no accounts 
 ## Processing stages
 
 1. Extract page text and built-in PDF TOC with PyMuPDF. Pages that contain an image but fewer than 24 selectable text characters are OCR'd with Tesseract (220 DPI, user-selected language).
-2. Remove recurring header/footer lines only when they repeat consistently, normalize common typography, join line-wrapped text and dehyphenate line-break splits.
+2. Remove recurring header/footer lines only when they repeat consistently, discard stray OCR/markup asterisks (repairing common possessives), normalize common typography, join line-wrapped text and dehyphenate line-break splits.
 3. Use TOC entries as chapter boundaries where present; otherwise treat the document as one chapter. Optional front-matter skipping uses conservative heuristics and is user-adjustable.
 4. Split on paragraph/sentence boundaries, targeting short chunks to fit TTS.
 5. Generate each text chunk sequentially with a selected preset voice. Each completed chunk is atomically saved as WAV under `output/jobs/`.
-6. Assemble the saved chunks with short sentence/paragraph gaps, then export WAV or MP3. If a job is interrupted, the app reuses finished OCR pages and audio chunks.
+6. Assemble the saved chunks with short sentence/paragraph gaps, then export WAV or MP3. MP3 output receives the PDF's first page as attached cover art and the source filename as its title; the GUI displays the same cover. WAV offers the cover as a separate image download. If a job is interrupted, the app reuses finished OCR pages and audio chunks.
 
 Front matter is detected heuristically from chapter starts inferred from a printed contents page when no embedded PDF TOC is available. If no contents page is found, common English openings (`PROLOGUE`, `CHAPTER 1`, `CHAPTER ONE`, or `CHAPTER I`) are recognized even when leading scan punctuation appears before the heading. Review the preview before audio generation. Pages with an existing text layer use that layer; OCR quality remains dependent on the source scan. Jobs are keyed to the uploaded PDF and chosen settings plus a preprocessing revision; after a preprocessing fix, the app creates a fresh job so stale text and audio checkpoints are not reused.

@@ -11,7 +11,14 @@ from pathlib import Path
 import pymupdf as fitz
 
 
+def _repair_asterisks(text: str) -> str:
+    """Remove OCR/markup stars that Kokoro otherwise reads literally."""
+    text = re.sub(r"(?<=\w)\*(?=(?:s|t|re|ve|ll|d|m)\b)", "'", text, flags=re.I)
+    return text.replace("*", "")
+
+
 def _clean(text: str) -> str:
+    text = _repair_asterisks(text)
     replacements = {
         "“": '"', "”": '"', "„": '"', "‘": "'", "’": "'",
         "–": "-", "−": "-", "—": ", ", "…": "...", "\u00a0": " ",
