@@ -5,8 +5,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from preprocess import prepare_pdf
-from tts import synthesize
+from app.preprocess import prepare_pdf
+from app.tts import synthesize
 
 st.set_page_config(page_title="Kokoro PDF to Audiobook", page_icon="📚", layout="centered")
 st.title("PDF → Hörbuch")
