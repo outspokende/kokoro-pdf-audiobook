@@ -15,7 +15,7 @@ Streamlit UI ──> Per-page text check ──> Tesseract OCR if needed
    └──────── WAV / MP3 download <── checkpointed chunks + assembly
 ```
 
-PDF bytes and audio remain on the Mac during inference. The app has no accounts or remote storage; anyone able to reach the bound interface can use it, so do not expose it to an untrusted network. Package installation and initial model retrieval contact external package/model hosts.
+PDF bytes and audio remain on the Mac during inference. The app has no accounts or remote storage; anyone able to reach the bound interface can use it, so do not expose it to an untrusted network. Completed jobs remain under `output/jobs/`; the UI surfaces the newest existing output on the landing view so it can still be downloaded after a browser reconnect or uploader reset. Package installation and initial model retrieval contact external package/model hosts.
 
 ## Processing stages
 

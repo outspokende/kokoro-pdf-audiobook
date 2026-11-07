@@ -73,6 +73,27 @@ def status_for(job_id: str) -> dict:
     return status
 
 
+def most_recent_completed_job() -> dict | None:
+    """Return the newest completed job whose output file still exists."""
+    candidates = []
+    for status_path in OUTPUT_ROOT.glob("*/status.json"):
+        status = _read_json(status_path, {})
+        output_name = status.get("output")
+        if status.get("state") != "complete" or not isinstance(output_name, str):
+            continue
+        if Path(output_name).name != output_name:
+            continue
+        output_path = status_path.parent / output_name
+        if output_path.is_file():
+            candidates.append((status_path.stat().st_mtime, {
+                "job_id": status_path.parent.name,
+                "status": status,
+                "output_path": output_path,
+                "modified_at": status_path.stat().st_mtime,
+            }))
+    return max(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
 def thread_running(job_id: str) -> bool:
     with _thread_lock:
         thread = _threads.get(job_id)

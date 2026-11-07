@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
@@ -14,6 +15,32 @@ SAMPLE_PDF = (
     Path(__file__).resolve().parent.parent
     / "samples" / "war-of-the-worlds" / "warofworlds1898well.pdf"
 )
+
+
+def render_recent_download() -> str | None:
+    recent = jobs.most_recent_completed_job()
+    if not recent:
+        return None
+    output_path = recent["output_path"]
+    job_id = recent["job_id"]
+    suffix = output_path.suffix.lower() or ".mp3"
+    mime = "audio/wav" if suffix == ".wav" else "audio/mpeg"
+    finished = datetime.fromtimestamp(recent["modified_at"]).strftime("%d.%m.%Y · %H:%M")
+    size_mib = output_path.stat().st_size / (1024 * 1024)
+    with st.container(border=True):
+        st.markdown('<p class="section-label">LETZTES HÖRBUCH</p>', unsafe_allow_html=True)
+        st.subheader("Fertig – hier herunterladen")
+        st.caption(f"Abgeschlossen {finished} · {size_mib:.1f} MiB")
+        st.download_button(
+            "Fertiges Hörbuch herunterladen",
+            data=lambda path=output_path: path.read_bytes(),
+            file_name=f"Hoerbuch-{job_id[:8]}{suffix}", mime=mime,
+            key=f"recent-download-{job_id}", type="primary", on_click="ignore",
+        )
+        st.caption("Die Datei liegt lokal auf diesem Mac.")
+    return job_id
+
+
 st.markdown("""
 <style>
 :root { color-scheme: dark; }
@@ -93,6 +120,8 @@ h2, h3 { text-wrap: balance; }
   <div class="hero-pills"><span class="hero-pill">✦ Kokoro TTS</span><span class="hero-pill">⌂ Lokal verarbeitet</span><span class="hero-pill">↻ Unterbrechbar & fortsetzbar</span></div>
 </div>
 """, unsafe_allow_html=True)
+
+recent_download_placeholder = st.empty()
 
 with st.container(border=True):
     input_column, settings_column = st.columns([1.08, .92], gap="large")
@@ -228,6 +257,8 @@ Der Zeitstrahl zeigt die aktuelle Station. Während der Verarbeitung siehst du G
 
 selected_pdf = use_sample and SAMPLE_PDF.is_file() or upload is not None
 if not selected_pdf:
+    with recent_download_placeholder.container():
+        render_recent_download()
     st.markdown('<p class="section-label">03 / Der Ablauf</p><h3>Eine Pipeline, die du mitverfolgen kannst</h3>', unsafe_allow_html=True)
     render_timeline(False, None, False)
     render_pipeline_guide()
@@ -250,6 +281,10 @@ source = jobs.ensure_source(folder, pdf_bytes)
 prepared_file = folder / "prepared.json"
 prepared = jobs._read_json(prepared_file)
 status = jobs.status_for(job_id)
+recent_download_job_id = None
+if status.get("state") == "complete":
+    with recent_download_placeholder.container():
+        recent_download_job_id = render_recent_download()
 
 st.markdown('<p class="section-label">03 / Live-Pipeline</p><h3>Dein Hörbuch entsteht Schritt für Schritt</h3>', unsafe_allow_html=True)
 if not status:
@@ -300,11 +335,14 @@ if status:
         if current.get("state") == "complete":
             st.success(current.get("message", "Hörbuch fertig"))
             output = folder / current["output"]
-            if output.is_file():
+            if output.is_file() and current_job_id == recent_download_job_id:
+                st.caption("Der Download steht oben unter „Letztes Hörbuch“ bereit.")
+            elif output.is_file():
                 st.download_button(
-                    "Hörbuch herunterladen", output.read_bytes(), file_name=f"{Path(source_name).stem}.{output_format}",
+                    "Hörbuch herunterladen", data=lambda path=output: path.read_bytes(),
+                    file_name=f"{Path(source_name).stem}.{output_format}",
                     mime="audio/mpeg" if output_format == "mp3" else "audio/wav",
-                    key=f"download-{current_job_id}", type="primary",
+                    key=f"download-{current_job_id}", type="primary", on_click="ignore",
                 )
             return
 

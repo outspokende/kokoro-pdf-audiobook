@@ -35,7 +35,7 @@ The interface includes a six-step timeline from PDF upload through OCR, text pre
 
 To try the pipeline without uploading your own book, tick **“Testbuch wählen: The War of the Worlds”** in the PDF panel. This selects the included 326-page PDF and disables the uploader while selected. The book is included at `samples/war-of-the-worlds/warofworlds1898well.pdf`; the [sample README](samples/war-of-the-worlds/README.md) documents its source and public-domain status. Review the prepared text first; generating the entire audiobook can take a long time.
 
-Each available voice has a short English sample in the voice selector so listeners can compare them before generating an audiobook. OCR and synthesis progress are shown in the app. Page extraction and each speech chunk are checkpointed locally, so an interrupted job can resume with the same PDF and settings.
+Each available voice has a short English sample in the voice selector so listeners can compare them before generating an audiobook. OCR and synthesis progress are shown in the app. Page extraction and each speech chunk are checkpointed locally, so an interrupted job can resume with the same PDF and settings. The most recently completed audiobook remains downloadable from the top of the page if the upload widget resets or the browser reconnects.
 
 This prototype currently provides English Kokoro voices. Image-only scans are OCR'd locally with Tesseract; pages with an existing text layer use that text. When “skip front matter” is enabled, common `PROLOGUE` and `CHAPTER 1/ONE/I` headings are recognized even if scan noise such as leading punctuation appears before them. Always review the extracted text before generating audio: OCR quality and front-matter detection remain dependent on the scan.
 
@@ -60,4 +60,4 @@ The project code is licensed under AGPL-3.0. PyMuPDF is offered under AGPL or a 
 
 ## Status
 
-**Prototype.** Validated preprocessing on the included 326-page public-domain scan: 22 chapters, about 334k cleaned characters, and the narrative correctly bounded from its first chapter through “THE END.” Kokoro generated and encoded a 22-second WAV and MP3 excerpt. The app starts on the LAN/VPN interface. Full-book audio generation and the browser download interaction have not been verified. See [validation.md](validation.md).
+**Prototype.** Validated preprocessing on the included 326-page public-domain scan: 22 chapters, about 334k cleaned characters, and the narrative correctly bounded from its first chapter through “THE END.” Kokoro generated and encoded a 22-second WAV and MP3 excerpt. The app starts on the LAN/VPN interface. The landing page now recovers the newest completed local output after a browser reconnect. See [validation.md](validation.md).
