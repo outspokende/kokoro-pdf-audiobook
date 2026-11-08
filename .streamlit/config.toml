@@ -6,6 +6,9 @@ port = 8501
 [browser]
 gatherUsageStats = false
 
+[client]
+toolbarMode = "minimal"
+
 [theme]
 base = "dark"
 primaryColor = "#A9F654"

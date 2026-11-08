@@ -22,6 +22,21 @@ Choose a PDF, listen to the built-in voice samples, review the prepared text, th
 
 > **Prototype status:** preprocessing has been validated on the included public-domain scan. A full audiobook file was generated, but the entire book has not been listened through. See [validation details](validation.md).
 
+## Screenshots
+
+Here is the running app, followed by the processing timeline, voice selector,
+and the public-domain test book included in the repository.
+
+![Kokoro PDF to Audiobook web interface with the completed sample book, PDF selection, voice preview, and MP3/WAV options](docs/screenshots/webgui-overview.png)
+
+| The six-stage pipeline | Built-in sample voices |
+|---|---|
+| ![The live timeline from PDF upload through OCR, text review, synthesis, and export](docs/screenshots/pipeline-timeline.png) | ![Voice selector showing six English Kokoro voices with US and UK labels](docs/screenshots/sample-voices.png) |
+
+| Select the included test book | Its cover, rendered from the sample PDF |
+|---|---|
+| ![The War of the Worlds selected as the included test PDF in the web app](docs/screenshots/sample-book-cover.png) | ![Cover of the included public-domain The War of the Worlds PDF](docs/screenshots/test-book-cover.png) |
+
 ## ✨ What it does
 
 | | |

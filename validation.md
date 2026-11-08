@@ -14,6 +14,7 @@ Date: 2026-11-07. Machine: Apple Silicon Mac, Python 3.11, 16 GB RAM.
 - Kokoro `af_heart` generated the first prepared paragraph as a 22.025-second, 24 kHz mono WAV.
 - The same paragraph encoded to a 193,340-byte MP3 at about 70 kb/s. After the model was warm, that run took about 9 seconds.
 - The complete 1,110-chunk fixture audiobook was regenerated after removing stray asterisks from 81 text chunks. The MP3 was remuxed with the first PDF page as attached artwork and the filename stem as its title; both metadata and image stream were verified. Full-length playback was not reviewed.
+- On 2026-11-08, the completed-audiobook download button in the browser returned `warofworlds1898well.mp3` (172,161,547 bytes; valid ID3 header). This confirms the browser download path for a completed job.
 - `./install.sh` completed. `./start.sh` started Streamlit bound to `0.0.0.0:8501`; the app displayed a LAN URL and its page was reachable at `http://192.168.178.89:8501` during this session. That address can change with DHCP; users should use their Mac's current LAN/VPN-reachable IP.
 
 ## OCR and resume checks
@@ -24,4 +25,4 @@ Date: 2026-11-07. Machine: Apple Silicon Mac, Python 3.11, 16 GB RAM.
 
 ## Limits of this run
 
-This confirms PDF extraction/preprocessing and the Kokoro WAV/MP3 synthesis/encoding functions on real text from the scan. It does **not** confirm synthesis of all 1,110 chunks, a complete multi-hour audiobook, or the final browser download-button interaction. The temporary excerpts and generated audio were not added to the repository.
+This confirms PDF extraction/preprocessing, Kokoro WAV/MP3 synthesis/encoding, and the completed-job browser download path on the included scan. It does **not** confirm uninterrupted synthesis of all 1,110 chunks in one run or full-length listening review. The temporary excerpts and generated audio were not added to the repository.
