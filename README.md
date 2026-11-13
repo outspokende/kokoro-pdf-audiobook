@@ -54,7 +54,7 @@ Everything after model and dependency setup runs locally on your Mac. The first 
 **Requirements:** macOS on Apple Silicon, Python 3.11 and internet access for first-time setup.
 
 ```bash
-git clone https://github.com/outspokende/kokoro-pdf-audiobook.git
+git clone https://github.com/outspokenhardcore/kokoro-pdf-audiobook.git
 cd kokoro-pdf-audiobook
 ./install.sh
 ./start.sh
